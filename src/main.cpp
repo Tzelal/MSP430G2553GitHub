@@ -85,21 +85,23 @@ int main(void)
     int A1 = adc[4];
     int A2 = adc[3];
 
-    float newVal = path(A0, 0, 1023, 0.343, 70);
+    float valA0 = path(A0, 0, 1023, 0.343, 70);
+    float valA1 = path(A1, 0, 1023, 0.343, 70);
+    float valA2 = path(A2, 0, 1023, 0.343, 70);
 
     //volts = (3*((A0*3.3)/1023)- 0.475)*10;
-    dst_int = floor(newVal);
-    tmp_flt = newVal - dst_int;
+    dst_int = floor(valA0);
+    tmp_flt = valA0 - dst_int;
     ltoa(dst_int, dst_char,10);
 
-    volts1 = (3*((A1*3.3)/1023)- 0.475)*10;
-    dst_int1 = floor(volts1);
-    tmp_flt1 = volts1 - dst_int1;
+    //volts1 = (3*((A1*3.3)/1023)- 0.475)*10;
+    dst_int1 = floor(valA1);
+    tmp_flt1 = valA1 - dst_int1;
     ltoa(dst_int1, dst_char1,10);
 
-    volts2 = (3*((A2*3.3)/1023)- 0.475)*10;
-    dst_int2 = floor(volts2);
-    tmp_flt2 = volts2 - dst_int2;
+    //volts2 = (3*((A2*3.3)/1023)- 0.475)*10;
+    dst_int2 = floor(valA2);
+    tmp_flt2 = valA2 - dst_int2;
     ltoa(dst_int2, dst_char2,10);
 
 
