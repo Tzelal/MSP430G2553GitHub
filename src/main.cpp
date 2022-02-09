@@ -13,41 +13,39 @@
 #define COMMAND_LENGTH 100
 char command[COMMAND_LENGTH];
 
-//volatile uint16_t offset = 0;
-volatile uint16_t flag = false;
-//volatile uint16_t pressure = 0;
+volatile uint16_t senOneFlag = false;
+volatile uint16_t senTwoFlag = false;
+volatile uint16_t senThreeFlag = false;
+volatile uint16_t rstOneFlag = false;
+volatile uint16_t rstTwoFlag = false;
+volatile uint16_t rstThreeFlag = false;
 
 float offset;
 float pressure;
 
+int count = 10; // don't increase too much, it affects to the range
+int raw = 0;
+int res;
+
 int dst_int;
 int dst_int1;
 int dst_int2;
+
 int dst_flt;
 int dst_flt1;
 int dst_flt2;
 
-int j;
-int ana;
-int result = 0;
-int sensorVal[10];
-int sample = 0;
-
 float tmp_flt;
 float tmp_flt1;
 float tmp_flt2;
-float volts;
-float volts1;
-float volts2;
-
 
 char dst_char[7];
 char dst_char1[7];
 char dst_char2[7];
+
 char dst_flt_char[7];
 char dst_flt_char1[7];
 char dst_flt_char2[7];
-
 
 char vt_chara0[7];
 char vt_chara3[7];
@@ -60,6 +58,7 @@ char bars[] = " bars. ";
 char dot[] = ".";
 char zerro[] = "0";
 char rst[] = "  -----------RESET-----------\n";
+char line[] = "  ---------------------------\n";
 char newline[] = " \r\n";
 
 
@@ -94,103 +93,185 @@ int main(void)
     while (ADC10CTL1 & BUSY);
     ADC10CTL0 |= ENC + ADC10SC;
     ADC10SA = (unsigned int)adc;
-
     
-    int A1 = adc[4];
-    int A2 = adc[3];
     
-    int count = 10; // don't increase too much, it affects to the range
-    int raw = 0;
-    int res;
-    char x[7];
+    
 
-    if(flag == true)
+    if(senOneFlag == true)
     {
-        //res = pressure ;
-
         for(int i = 0; i < count; i++)
         {
             int A0 = adc[7];
             raw += A0;
-            
         }
-
         res = raw / count;
-        pressure = res - offset;
+        pressure = res-offset;
+        
         raw = 0;
-        flag = false;
+
+        senOneFlag = false;
+        
+        double anaZero = path(pressure, 0, 1023, 0.343, 70);
+
+        dst_int = floor(anaZero);
+        tmp_flt = anaZero - dst_int;
+        ltoa(dst_int, dst_char,10);
+
+        if (tmp_flt < 0.001) 
+        {
+            dst_flt = floor(tmp_flt * 10000);
+            ltoa(dst_flt,dst_flt_char,10);
+        }
+        else if (tmp_flt < 0.01) 
+        {
+            dst_flt = floor(tmp_flt * 1000);
+            ltoa(dst_flt,dst_flt_char,10);
+        }
+        else 
+        {
+            dst_flt = floor(tmp_flt * 1000);
+            ltoa(dst_flt,dst_flt_char,10);
+        }
+        uart_write(volta0);
+        uart_write(dst_char);
+        uart_write(dot);
+        uart_write(dst_flt_char);
+        uart_write(bars);
+        uart_write("\n");
     } 
 
-
-    double valA0 = path(pressure, 0, 1023, 0.343, 70);
-    double valA1 = path(A1, 0, 1023, 0.343, 70);
-    double valA2 = path(A2, 0, 1023, 0.343, 70);
-    
-    //volts = (3*((A0*3.3)/1023)- 0.475)*10;
-    dst_int = floor(valA0);
-    tmp_flt = valA0 - dst_int;
-    ltoa(dst_int, dst_char,10);
-
-    //volts1 = (3*((A1*3.3)/1023)- 0.475)*10;
-    dst_int1 = floor(valA1);
-    tmp_flt1 = valA1 - dst_int1;
-    ltoa(dst_int1, dst_char1,10);
-
-    //volts2 = (3*((A2*3.3)/1023)- 0.475)*10;
-    dst_int2 = floor(valA2);
-    tmp_flt2 = valA2 - dst_int2;
-    ltoa(dst_int2, dst_char2,10);
-
-
-     if (tmp_flt < 0.001) {
-        dst_flt = floor(tmp_flt * 10000);
-        ltoa(dst_flt,dst_flt_char,10);
+    if(senTwoFlag == true)
+    {
+        for(int i = 0; i < count; i++)
+        {
+            int A1 = adc[4];
+            raw += A1;
+        }
+        res = raw / count;
+        pressure = res-offset;
         
-        }
-        else if (tmp_flt < 0.01) {
-            dst_flt = floor(tmp_flt * 1000);
-            ltoa(dst_flt,dst_flt_char,10);
-            
-        }
-        else {
-            dst_flt = floor(tmp_flt * 1000);
-            ltoa(dst_flt,dst_flt_char,10);
-            
-        }
+        raw = 0;
 
-        if (tmp_flt1 < 0.01) {
+        senTwoFlag = false;
+
+        double anaOne = path(pressure, 0, 1023, 0.343, 70);
+
+        dst_int1 = floor(anaOne);
+        tmp_flt1 = anaOne - dst_int1;
+        ltoa(dst_int1, dst_char1,10);
+
+        if (tmp_flt1 < 0.01) 
+        {
             dst_flt1 = floor(tmp_flt1 * 10000);
             ltoa(dst_flt1,dst_flt_char1,10);
-           
-            }
-        else if (tmp_flt1 < 0.1) {
-                dst_flt1 = floor(tmp_flt1 * 1000);
-                ltoa(dst_flt1,dst_flt_char1,10);
-              
-            }
-        else {
-                dst_flt1 = floor(tmp_flt1 * 1000);
-                ltoa(dst_flt1,dst_flt_char1,10);
-               
-            }
+        }
+        else if (tmp_flt1 < 0.1) 
+        {
+            dst_flt1 = floor(tmp_flt1 * 1000);
+            ltoa(dst_flt1,dst_flt_char1,10);
+        }
+        else 
+        {
+            dst_flt1 = floor(tmp_flt1 * 1000);
+            ltoa(dst_flt1,dst_flt_char1,10);             
+        }
+        uart_write(volta1);
+        uart_write(dst_char1);
+        uart_write(dot);
+        uart_write(dst_flt_char1);
+        uart_write(bars);
+        uart_write("\n");
+    }
 
-        if (tmp_flt2 < 0.01) {
+    if(senThreeFlag == true)
+    {
+        for(int i = 0; i < count; i++)
+        {
+            int A2 = adc[3];
+            raw += A2;
+        }
+        res = raw / count;
+        pressure = res-offset;
+        
+        raw = 0;
+
+        senThreeFlag = false;
+
+        double anaThree = path(pressure, 0, 1023, 0.343, 70);
+
+        dst_int2 = floor(anaThree);
+        tmp_flt2 = anaThree - dst_int2;
+        ltoa(dst_int2, dst_char2,10);
+
+        if (tmp_flt2 < 0.01) 
+        {
             dst_flt2 = floor(tmp_flt2 * 10000);
             ltoa(dst_flt2,dst_flt_char2,10);
-            
-            }
-        else if (tmp_flt2 < 0.1) {
-                dst_flt2 = floor(tmp_flt2 * 1000);
-                ltoa(dst_flt2,dst_flt_char2,10);
-               
-            }
-        else {
-                dst_flt2 = floor(tmp_flt2 * 1000);
-                ltoa(dst_flt2,dst_flt_char2,10);
-                
-            }
+        }
+        else if (tmp_flt2 < 0.1) 
+        {
+            dst_flt2 = floor(tmp_flt2 * 1000);
+            ltoa(dst_flt2,dst_flt_char2,10);
+        }
+        else 
+        {
+            dst_flt2 = floor(tmp_flt2 * 1000);
+            ltoa(dst_flt2,dst_flt_char2,10);
+        }
 
-        __delay_cycles(3000000);
+        uart_write(volta2);
+        uart_write(dst_char2);
+        uart_write(dot);
+        uart_write(dst_flt_char2);
+        uart_write(bars);
+        uart_write("\n");
+    }
+       
+    if(rstOneFlag == true)
+    {
+        if( adc[7] != 0)
+        {
+            offset = adc[7];
+        }
+        else
+        {
+            offset = 0;
+        }
+
+        uart_write(rst);
+        rstOneFlag = false;
+    }
+
+    if(rstTwoFlag == true)
+    {
+        if( adc[4] != 0)
+        {
+            offset = adc[4];
+        }
+        else
+        {
+            offset = 0;
+        }
+
+        uart_write(rst);
+        rstTwoFlag = false;
+    }
+
+    if(rstThreeFlag == true)
+    {
+        if( adc[3] != 0)
+        {
+            offset = adc[3];
+        }
+        else
+        {
+            offset = 0;
+        }
+
+        uart_write(rst);
+        rstThreeFlag = false;
+    }
+
     }
 
 }
@@ -274,103 +355,35 @@ void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCI0RX_ISR (void)
         }
         else if(strcmp(command,"PR1")==0)
         {
-            
-            uart_write(volta0);
-            uart_write(dst_char);
-            uart_write(dot);
-            //uart_write(zerro);
-            uart_write(dst_flt_char);
-            uart_write(bars);
-            uart_write("\n");
-            
-            flag = true;
-            
+            senOneFlag = true; 
         }
         else if(strcmp(command,"PR2")==0)
         {
-            uart_write(volta1);
-            uart_write(dst_char1);
-            uart_write(dot);
-            //uart_write(zerro);
-            uart_write(dst_flt_char1);
-            uart_write(bars);
-            uart_write("\n");
+            senTwoFlag = true;
         }
         else if(strcmp(command,"PR3")==0)
         {
-            uart_write(volta2);
-            uart_write(dst_char2);
-            uart_write(dot);
-            uart_write(zerro);
-            uart_write(dst_flt_char2);
-            uart_write(bars);
-            uart_write("\n");
-
+            senThreeFlag = true;
         }
         else if(strcmp(command,"PRALL")==0)
         {
-            uart_write(volta0);
-            uart_write(dst_char);
-            uart_write(dot);
-            //uart_write(zerro);
-            uart_write(dst_flt_char);
-            uart_write(bars   );
-
-
-            uart_write(volta1);
-            uart_write(dst_char1);
-            uart_write(dot);
-            //uart_write(zerro);
-            uart_write(dst_flt_char1);
-            uart_write(bars   );
-
-            uart_write(volta2);
-            uart_write(dst_char2);
-            uart_write(dot);
-            //uart_write(zerro);
-            uart_write(dst_flt_char2);
-            uart_write(bars);
-            uart_write("\n");
-
-            flag = true;
-
+            uart_write(line);
+            senOneFlag = true;
+            senTwoFlag = true;
+            senThreeFlag = true;
         }
-        else if(strcmp(command,"RST")==0)
+        else if(strcmp(command,"RST1")==0)
         {
-            if( adc[7] != 0)
-            {
-                offset = adc[7];
-                //flag = true;
-            }
-            else
-            {
-                offset = 0;
-            }
-            uart_write(rst);
+            rstOneFlag = true;
         }
-        
-        /*else if((strncmp(command,"CAL",3)==0) && (command[6]=='.') && (command[9]=='$')) // Example of variable command CAL+XX.YY$
+        else if(strcmp(command,"RST2")==0)
         {
-            if(command[3]=='+')
-            {
-                //Check XX integers
-                //Check YY integers
-                //Convert to double
-                //Assign values to global variables
-            }
-            else if(command[3]=='-')
-            {
-                //Check XX integers
-                //Check YY integers
-                //Convert to double
-                //Assign values to global variables
-            }
-            else
-            {
-                uart_write("CAL Sign Error...\n");
-            }
-            uart_write("CAL sending...\n");
-        }*/
+            rstTwoFlag = true;
+        }
+        else if(strcmp(command,"RST3")==0)
+        {
+            rstThreeFlag = true;
+        }
         else
         {
             memset(command,'\0',COMMAND_LENGTH); // Reset command vector
@@ -382,9 +395,5 @@ void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCI0RX_ISR (void)
         counter=0; // restart counter for a new command
 
     }
-/*
-    while (!(IFG2 & UCA0TXIFG));              // USCI_A0 TX buffer ready?
-    UCA0TXBUF = UCA0RXBUF;                    // TX -> RXed character
-*/
 
 }
