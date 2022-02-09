@@ -6,13 +6,19 @@
 #include <stdlib.h>
 #include <rangeLib.h>
 
-
 /**
  * main.c
  */
 
 #define COMMAND_LENGTH 100
 char command[COMMAND_LENGTH];
+
+//volatile uint16_t offset = 0;
+volatile uint16_t flag = false;
+//volatile uint16_t pressure = 0;
+
+float offset;
+float pressure;
 
 int dst_int;
 int dst_int1;
@@ -21,22 +27,31 @@ int dst_flt;
 int dst_flt1;
 int dst_flt2;
 
+int j;
+int ana;
+int result = 0;
+int sensorVal[10];
+int sample = 0;
+
 float tmp_flt;
 float tmp_flt1;
 float tmp_flt2;
 float volts;
 float volts1;
 float volts2;
-char dst_char[5];
-char dst_char1[5];
-char dst_char2[5];
-char dst_flt_char[5];
-char dst_flt_char1[5];
-char dst_flt_char2[5];
 
-char vt_chara0[5];
-char vt_chara3[5];
-char vt_chara4[5];
+
+char dst_char[7];
+char dst_char1[7];
+char dst_char2[7];
+char dst_flt_char[7];
+char dst_flt_char1[7];
+char dst_flt_char2[7];
+
+
+char vt_chara0[7];
+char vt_chara3[7];
+char vt_chara4[7];
 
 char volta0[] = "  A0: ";
 char volta1[] = "  A1: ";
@@ -44,6 +59,7 @@ char volta2[] = "  A2: ";
 char bars[] = " bars. ";
 char dot[] = ".";
 char zerro[] = "0";
+char rst[] = "  -----------RESET-----------\n";
 char newline[] = " \r\n";
 
 
@@ -64,9 +80,8 @@ int main(void)
     mcu_init();
     uart_init();
 
-    P1DIR |= 0x01;
-    P1OUT &= 0x00;
-
+    P1DIR   |= 0x01;
+    P1OUT   &= 0x00;
 
     while(1)
     {
@@ -75,20 +90,42 @@ int main(void)
     ADC10AE0 = BIT7 + BIT6 + BIT5 + BIT4 + BIT3 + BIT0;
     ADC10DTC1 = 8;
 
-
     ADC10CTL0 &= ~ENC;
     while (ADC10CTL1 & BUSY);
     ADC10CTL0 |= ENC + ADC10SC;
     ADC10SA = (unsigned int)adc;
 
-    int A0 = adc[7];
+    
     int A1 = adc[4];
     int A2 = adc[3];
+    
+    int count = 10; // don't increase too much, it affects to the range
+    int raw = 0;
+    int res;
+    char x[7];
 
-    float valA0 = path(A0, 0, 1023, 0.343, 70);
-    float valA1 = path(A1, 0, 1023, 0.343, 70);
-    float valA2 = path(A2, 0, 1023, 0.343, 70);
+    if(flag == true)
+    {
+        //res = pressure ;
 
+        for(int i = 0; i < count; i++)
+        {
+            int A0 = adc[7];
+            raw += A0;
+            
+        }
+
+        res = raw / count;
+        pressure = res - offset;
+        raw = 0;
+        flag = false;
+    } 
+
+
+    double valA0 = path(pressure, 0, 1023, 0.343, 70);
+    double valA1 = path(A1, 0, 1023, 0.343, 70);
+    double valA2 = path(A2, 0, 1023, 0.343, 70);
+    
     //volts = (3*((A0*3.3)/1023)- 0.475)*10;
     dst_int = floor(valA0);
     tmp_flt = valA0 - dst_int;
@@ -105,58 +142,56 @@ int main(void)
     ltoa(dst_int2, dst_char2,10);
 
 
-     if (tmp_flt < 0.01) {
-        dst_flt = floor(tmp_flt * 1000);
+     if (tmp_flt < 0.001) {
+        dst_flt = floor(tmp_flt * 10000);
         ltoa(dst_flt,dst_flt_char,10);
-        //ser_output(volta0); ser_output(dst_char); ser_output(dot); ser_output(zerro); ser_output(dst_flt_char); ser_output(bars);
+        
         }
-        else if (tmp_flt < 0.1) {
-            dst_flt = floor(tmp_flt * 100);
+        else if (tmp_flt < 0.01) {
+            dst_flt = floor(tmp_flt * 1000);
             ltoa(dst_flt,dst_flt_char,10);
-            //ser_output(volta0); ser_output(dst_char); ser_output(dot); ser_output(zerro); ser_output(dst_flt_char); ser_output(bars);
+            
         }
         else {
-            dst_flt = floor(tmp_flt * 100);
+            dst_flt = floor(tmp_flt * 1000);
             ltoa(dst_flt,dst_flt_char,10);
-            //ser_output(volta0); ser_output(dst_char); ser_output(dot); ser_output(dst_flt_char); ser_output(bars);
+            
         }
 
         if (tmp_flt1 < 0.01) {
-            dst_flt1 = floor(tmp_flt1 * 1000);
+            dst_flt1 = floor(tmp_flt1 * 10000);
             ltoa(dst_flt1,dst_flt_char1,10);
-           // ser_output(volta1); ser_output(dst_char1); ser_output(dot); ser_output(zerro); ser_output(dst_flt_char1); ser_output(bars);
+           
             }
         else if (tmp_flt1 < 0.1) {
-                dst_flt1 = floor(tmp_flt1 * 100);
+                dst_flt1 = floor(tmp_flt1 * 1000);
                 ltoa(dst_flt1,dst_flt_char1,10);
-              //  ser_output(volta1); ser_output(dst_char1); ser_output(dot); ser_output(zerro); ser_output(dst_flt_char1); ser_output(bars);
+              
             }
         else {
-                dst_flt1 = floor(tmp_flt1 * 100);
+                dst_flt1 = floor(tmp_flt1 * 1000);
                 ltoa(dst_flt1,dst_flt_char1,10);
-               // ser_output(volta1); ser_output(dst_char1); ser_output(dot); ser_output(dst_flt_char1); ser_output(bars);
+               
             }
 
         if (tmp_flt2 < 0.01) {
-            dst_flt2 = floor(tmp_flt2 * 1000);
+            dst_flt2 = floor(tmp_flt2 * 10000);
             ltoa(dst_flt2,dst_flt_char2,10);
-            //ser_output(volta2); ser_output(dst_char2); ser_output(dot); ser_output(zerro); ser_output(dst_flt_char2); ser_output(bars);
+            
             }
         else if (tmp_flt2 < 0.1) {
-                dst_flt2 = floor(tmp_flt2 * 100);
+                dst_flt2 = floor(tmp_flt2 * 1000);
                 ltoa(dst_flt2,dst_flt_char2,10);
-               // ser_output(volta2); ser_output(dst_char2); ser_output(dot); ser_output(zerro); ser_output(dst_flt_char2); ser_output(bars);
+               
             }
         else {
-                dst_flt2 = floor(tmp_flt2 * 100);
+                dst_flt2 = floor(tmp_flt2 * 1000);
                 ltoa(dst_flt2,dst_flt_char2,10);
-                //ser_output(volta2); ser_output(dst_char2); ser_output(dot); ser_output(dst_flt_char2); ser_output(bars);
+                
             }
 
-        __delay_cycles(100000);
-
+        __delay_cycles(3000000);
     }
-
 
 }
 
@@ -170,8 +205,8 @@ void mcu_init() {
     }
 
     DCOCTL = 0;                               // Select lowest DCOx and MODx settings
-    BCSCTL1 = CALBC1_16MHZ;                   // Set range
-    DCOCTL = CALDCO_16MHZ;                    // Set DCO step + modulation*/
+    BCSCTL1 = CALBC1_1MHZ;                   // Set range
+    DCOCTL = CALDCO_1MHZ;                    // Set DCO step + modulation*/
 }
 
 void uart_init() {
@@ -183,8 +218,8 @@ void uart_init() {
     P1SEL2 = BIT1 + BIT2 ;                    // P1.1 = RXD, P1.2=TXD
 
     UCA0CTL1 |= UCSSEL_2;                     // SMCLK
-    UCA0BR0 = 0x82;                            // 16MHz 9600
-    UCA0BR1 = 0x06;                              // 16MHz 9600
+    UCA0BR0 = 52;                            // 16MHz 9600
+    UCA0BR1 = 0;                              // 16MHz 9600
     UCA0MCTL = UCBRS_6;                        // Modulation UCBRSx = 6
     UCA0CTL1 &= ~UCSWRST;                     // **Initialize USCI state machine**
     IE2 |= UCA0RXIE;                          // Enable USCI_A0 RX interrupt
@@ -239,7 +274,7 @@ void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCI0RX_ISR (void)
         }
         else if(strcmp(command,"PR1")==0)
         {
-
+            
             uart_write(volta0);
             uart_write(dst_char);
             uart_write(dot);
@@ -247,6 +282,9 @@ void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCI0RX_ISR (void)
             uart_write(dst_flt_char);
             uart_write(bars);
             uart_write("\n");
+            
+            flag = true;
+            
         }
         else if(strcmp(command,"PR2")==0)
         {
@@ -289,13 +327,29 @@ void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCI0RX_ISR (void)
             uart_write(volta2);
             uart_write(dst_char2);
             uart_write(dot);
-            uart_write(zerro);
+            //uart_write(zerro);
             uart_write(dst_flt_char2);
             uart_write(bars);
             uart_write("\n");
 
+            flag = true;
+
         }
-        else if((strncmp(command,"CAL",3)==0) && (command[6]=='.') && (command[9]=='$')) // Example of variable command CAL+XX.YY$
+        else if(strcmp(command,"RST")==0)
+        {
+            if( adc[7] != 0)
+            {
+                offset = adc[7];
+                //flag = true;
+            }
+            else
+            {
+                offset = 0;
+            }
+            uart_write(rst);
+        }
+        
+        /*else if((strncmp(command,"CAL",3)==0) && (command[6]=='.') && (command[9]=='$')) // Example of variable command CAL+XX.YY$
         {
             if(command[3]=='+')
             {
@@ -316,7 +370,7 @@ void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCI0RX_ISR (void)
                 uart_write("CAL Sign Error...\n");
             }
             uart_write("CAL sending...\n");
-        }
+        }*/
         else
         {
             memset(command,'\0',COMMAND_LENGTH); // Reset command vector
@@ -334,4 +388,3 @@ void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCI0RX_ISR (void)
 */
 
 }
-
