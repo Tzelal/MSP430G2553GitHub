@@ -4,21 +4,41 @@
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <rangeLib.h>
+#include <funcLib.h>
 
-/**
- * main.c
- */
+volatile uint16_t senOneFlag = false;
+    volatile uint16_t senTwoFlag = false;
+    volatile uint16_t senThreeFlag = false;
+    volatile uint16_t rstOneFlag = false;
+    volatile uint16_t rstTwoFlag = false;
+    volatile uint16_t rstThreeFlag = false;
+
+    char volta0[] = "  A0: ";
+    char volta1[] = "  A1: ";
+    char volta2[] = "  A2: ";
+    char bars[] = " bars. ";
+    char dot[] = ".";
+    char zerro[] = "0";
+    char rst[] = "  -----------RESET-----------\n";
+    char line[] = "  ---------------------------\n";
+    char newline[] = " \r\n";
+
 
 #define COMMAND_LENGTH 100
 char command[COMMAND_LENGTH];
 
+char rule[4];
+
+/*
 volatile uint16_t senOneFlag = false;
 volatile uint16_t senTwoFlag = false;
 volatile uint16_t senThreeFlag = false;
 volatile uint16_t rstOneFlag = false;
 volatile uint16_t rstTwoFlag = false;
 volatile uint16_t rstThreeFlag = false;
+*/
 
 float offset;
 float pressure;
@@ -27,30 +47,22 @@ int count = 10; // don't increase too much, it affects to the range
 int raw = 0;
 int res;
 
-int dst_int;
-int dst_int1;
-int dst_int2;
-
-int dst_flt;
-int dst_flt1;
-int dst_flt2;
-
-float tmp_flt;
-float tmp_flt1;
-float tmp_flt2;
-
-char dst_char[7];
-char dst_char1[7];
-char dst_char2[7];
-
-char dst_flt_char[7];
-char dst_flt_char1[7];
-char dst_flt_char2[7];
-
 char vt_chara0[7];
 char vt_chara3[7];
 char vt_chara4[7];
+char* unitAll;
 
+//char pas[] = " pascals.";
+//char b[] = " bars.";
+//char t[] = " tors";
+
+long double volts;
+long double pascal;
+long double bar;
+long double tor;
+long double output;
+
+/*
 char volta0[] = "  A0: ";
 char volta1[] = "  A1: ";
 char volta2[] = "  A2: ";
@@ -60,10 +72,13 @@ char zerro[] = "0";
 char rst[] = "  -----------RESET-----------\n";
 char line[] = "  ---------------------------\n";
 char newline[] = " \r\n";
+*/
 
+char pas[] = "pascals.";
 
 unsigned int adc[8];
 
+volatile int unitFlag;
 volatile uint8_t counter;
 volatile uint8_t k;
 
@@ -72,15 +87,17 @@ void uart_init();
 void uart_write(char* str);
 void uart_writen(char* data, int n);
 void uart_writec(char data);
+char* value_percent(float volts);
+
+
 
 int main(void)
 {
-
     mcu_init();
     uart_init();
 
     P1DIR   |= 0x01;
-    P1OUT   &= 0x00;
+    P1OUT   &= 0x01;
 
     while(1)
     {
@@ -93,9 +110,7 @@ int main(void)
     while (ADC10CTL1 & BUSY);
     ADC10CTL0 |= ENC + ADC10SC;
     ADC10SA = (unsigned int)adc;
-    
-    
-    
+
 
     if(senOneFlag == true)
     {
@@ -111,33 +126,45 @@ int main(void)
 
         senOneFlag = false;
         
-        double anaZero = path(pressure, 0, 1023, 0.343, 70);
-
-        dst_int = floor(anaZero);
-        tmp_flt = anaZero - dst_int;
-        ltoa(dst_int, dst_char,10);
-
-        if (tmp_flt < 0.001) 
+        if(unitFlag == 0)
         {
-            dst_flt = floor(tmp_flt * 10000);
-            ltoa(dst_flt,dst_flt_char,10);
+            //volts = ((pressure*3.3)/1024);
+            //pascal = ((3*(volts))*750)*133/1000;
+            //output = pressure;   //2110818.182*volts+34300;  
+            float range = path(pressure, 0, 1023, 34.3, 7000);
+            output = range;    
+            unitAll = " kPa"; 
+            
+            //dtostre(output, s, 3, 0);
         }
-        else if (tmp_flt < 0.01) 
+        else if(unitFlag == 1)
         {
-            dst_flt = floor(tmp_flt * 1000);
-            ltoa(dst_flt,dst_flt_char,10);
+            //volts = ((pressure*3.3)/1024);
+            long double range = path(pressure, 0 , 1023, 0.343, 70);
+            output = range;
+            unitAll = " bar";
+        }
+        else if (unitFlag == 2)
+        {
+            //volts = ((pressure*3.3)/1024);
+            //tor = (3*(volts))*750;
+            //output = tor ;
+            long double range = path(pressure, 0 , 1023, 0.257, 52.504);
+            output = range;
+            unitAll = " kTorr";
         }
         else 
         {
-            dst_flt = floor(tmp_flt * 1000);
-            ltoa(dst_flt,dst_flt_char,10);
+            uart_write("No unit declared !");
         }
+
+        char* sum_o = value_percent(output);
+
         uart_write(volta0);
-        uart_write(dst_char);
-        uart_write(dot);
-        uart_write(dst_flt_char);
-        uart_write(bars);
+        uart_write(sum_o);
+        uart_write(unitAll);
         uart_write("\n");
+
     } 
 
     if(senTwoFlag == true)
@@ -154,32 +181,37 @@ int main(void)
 
         senTwoFlag = false;
 
-        double anaOne = path(pressure, 0, 1023, 0.343, 70);
-
-        dst_int1 = floor(anaOne);
-        tmp_flt1 = anaOne - dst_int1;
-        ltoa(dst_int1, dst_char1,10);
-
-        if (tmp_flt1 < 0.01) 
+       if(unitFlag == 0)
         {
-            dst_flt1 = floor(tmp_flt1 * 10000);
-            ltoa(dst_flt1,dst_flt_char1,10);
+            volts = ((pressure*3.3)/1023);
+            
+            unitAll = " pascal";
+           
         }
-        else if (tmp_flt1 < 0.1) 
+        else if(unitFlag == 1)
         {
-            dst_flt1 = floor(tmp_flt1 * 1000);
-            ltoa(dst_flt1,dst_flt_char1,10);
+            volts = ((pressure*3.3)/1024)*1000;
+            bar = (3*(volts-0.475));
+            output = bar;
+            unitAll = " mBar";
+        }
+        else if (unitFlag == 2)
+        {
+            volts = ((pressure*3.3)/1024)*1000;
+            tor = (3*(volts-0.475))*750;
+            output = tor ;
+            unitAll = " torr";
         }
         else 
         {
-            dst_flt1 = floor(tmp_flt1 * 1000);
-            ltoa(dst_flt1,dst_flt_char1,10);             
+            uart_write("No unit declared !");
         }
+
+        char* sum_o = value_percent(output);
+
         uart_write(volta1);
-        uart_write(dst_char1);
-        uart_write(dot);
-        uart_write(dst_flt_char1);
-        uart_write(bars);
+        uart_write(sum_o);
+        uart_write(unitAll);
         uart_write("\n");
     }
 
@@ -197,33 +229,37 @@ int main(void)
 
         senThreeFlag = false;
 
-        double anaThree = path(pressure, 0, 1023, 0.343, 70);
-
-        dst_int2 = floor(anaThree);
-        tmp_flt2 = anaThree - dst_int2;
-        ltoa(dst_int2, dst_char2,10);
-
-        if (tmp_flt2 < 0.01) 
+        if(unitFlag == 0)
         {
-            dst_flt2 = floor(tmp_flt2 * 10000);
-            ltoa(dst_flt2,dst_flt_char2,10);
+            volts = ((pressure*3.3)/1023);
+            
+            unitAll = " pascal";
+           
         }
-        else if (tmp_flt2 < 0.1) 
+        else if(unitFlag == 1)
         {
-            dst_flt2 = floor(tmp_flt2 * 1000);
-            ltoa(dst_flt2,dst_flt_char2,10);
+            volts = ((pressure*3.3)/1024)*1000;
+            bar = (3*(volts-0.475));
+            output = bar;
+            unitAll = " mBar";
+        }
+        else if (unitFlag == 2)
+        {
+            volts = ((pressure*3.3)/1024)*1000;
+            tor = (3*(volts-0.475))*750;
+            output = tor ;
+            unitAll = " torr";
         }
         else 
         {
-            dst_flt2 = floor(tmp_flt2 * 1000);
-            ltoa(dst_flt2,dst_flt_char2,10);
+            uart_write("No unit declared !");
         }
 
+        char* sum_o = value_percent(output);
+
         uart_write(volta2);
-        uart_write(dst_char2);
-        uart_write(dot);
-        uart_write(dst_flt_char2);
-        uart_write(bars);
+        uart_write(sum_o);
+        uart_write(unitAll);
         uart_write("\n");
     }
        
@@ -295,6 +331,8 @@ void uart_init() {
     memset(command,'\0',COMMAND_LENGTH);// Reset command vector
     counter=0; // restart counter for a new command
 
+    unitFlag = 0;
+    
     P1SEL = BIT1 + BIT2 ;                     // P1.1 = RXD, P1.2=TXD
     P1SEL2 = BIT1 + BIT2 ;                    // P1.1 = RXD, P1.2=TXD
 
@@ -325,9 +363,47 @@ void uart_writen(char* data, int n) {
 }
 
 void uart_writec(char data) {
-  while (!(IFG2 & UCA0TXIFG));
+  while (!(IFG2 & UCA0TXIFG));  
   UCA0TXBUF = data;
 }
+
+
+
+char* value_percent(float a)
+{
+        char dst_char[7];
+        char dst_flt_char[7];
+    
+
+        int dst_int = floor(a);
+        float tmp_flt = a - dst_int;
+        ltoa(dst_int, dst_char,10);
+
+        if (tmp_flt < 0.01) 
+        {
+            int dst_flt = floor(tmp_flt * 10000);
+            ltoa(dst_flt,dst_flt_char,10);
+        }
+        else if (tmp_flt < 0.1) 
+        {
+            int dst_flt = floor(tmp_flt * 1000);
+            ltoa(dst_flt,dst_flt_char,10);
+        }
+        else 
+        {
+            int dst_flt = floor(tmp_flt * 1000);
+            ltoa(dst_flt,dst_flt_char,10);             
+        }
+
+        strcat(dst_char, ".");
+        char* allCh = dst_char; 
+        strcat(allCh, dst_flt_char);
+        char* sum = allCh;
+
+        return sum;
+}
+
+
 
 #if defined(__TI_COMPILER_VERSION__) || defined(__IAR_SYSTEMS_ICC__)
 #pragma vector=USCIAB0RX_VECTOR
@@ -348,6 +424,7 @@ void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCI0RX_ISR (void)
     }
     else if(UCA0RXBUF == '\n')
     {
+        
 
         if (strcmp(command,"PRX")==0){ // Example Constant command
             uart_write("PRX sending...\n");
@@ -384,11 +461,37 @@ void __attribute__ ((interrupt(USCIAB0RX_VECTOR))) USCI0RX_ISR (void)
         {
             rstThreeFlag = true;
         }
+        else if(strncmp(command,"UNIT",4) ==0)
+        {
+           if(command[4]=='P')
+           {
+                unitFlag = 0;
+                uart_write("Unit pascal slected...");
+                uart_write("\n");
+           }
+           else if(command[4]=='B')
+           {
+                unitFlag = 1;
+                uart_write("Unit bar selected...");
+                uart_write("\n");
+           }
+           else if(command[4]=='T')
+           {
+                unitFlag  = 2;
+                uart_write("Unit tor selected...");
+                uart_write("\n");
+           }
+           else
+           {
+               uart_write("error!");
+               uart_write("\n");
+           }
+        }
         else
         {
             memset(command,'\0',COMMAND_LENGTH); // Reset command vector
             counter=0; // restart counter for a new command
-            uart_write("NOT ACK\n");
+            uart_write("-\n");
         }
 
         memset(command,'\0',COMMAND_LENGTH);// Reset command vector
