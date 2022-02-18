@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <rangeLib.h>
-#include <funcLib.h>
+#include <libGlobal.h>
 
 
 int main(void)
