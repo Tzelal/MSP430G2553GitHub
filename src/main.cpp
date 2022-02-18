@@ -1,6 +1,4 @@
 #include <msp430.h>
-#include <stdbool.h>
-#include <stdint.h>
 #include <string.h>
 #include <math.h>
 #include <stdlib.h>
@@ -8,94 +6,12 @@
 #include <rangeLib.h>
 #include <funcLib.h>
 
-volatile uint16_t senOneFlag = false;
-    volatile uint16_t senTwoFlag = false;
-    volatile uint16_t senThreeFlag = false;
-    volatile uint16_t rstOneFlag = false;
-    volatile uint16_t rstTwoFlag = false;
-    volatile uint16_t rstThreeFlag = false;
-
-    char volta0[] = "  A0: ";
-    char volta1[] = "  A1: ";
-    char volta2[] = "  A2: ";
-    char bars[] = " bars. ";
-    char dot[] = ".";
-    char zerro[] = "0";
-    char rst[] = "  -----------RESET-----------\n";
-    char line[] = "  ---------------------------\n";
-    char newline[] = " \r\n";
-
-
-#define COMMAND_LENGTH 100
-char command[COMMAND_LENGTH];
-
-char rule[4];
-
-/*
-volatile uint16_t senOneFlag = false;
-volatile uint16_t senTwoFlag = false;
-volatile uint16_t senThreeFlag = false;
-volatile uint16_t rstOneFlag = false;
-volatile uint16_t rstTwoFlag = false;
-volatile uint16_t rstThreeFlag = false;
-*/
-
-float offset;
-float pressure;
-
-int count = 10; // don't increase too much, it affects to the range
-int raw = 0;
-int res;
-
-char vt_chara0[7];
-char vt_chara3[7];
-char vt_chara4[7];
-char* unitAll;
-
-//char pas[] = " pascals.";
-//char b[] = " bars.";
-//char t[] = " tors";
-
-long double volts;
-long double pascal;
-long double bar;
-long double tor;
-long double output;
-
-/*
-char volta0[] = "  A0: ";
-char volta1[] = "  A1: ";
-char volta2[] = "  A2: ";
-char bars[] = " bars. ";
-char dot[] = ".";
-char zerro[] = "0";
-char rst[] = "  -----------RESET-----------\n";
-char line[] = "  ---------------------------\n";
-char newline[] = " \r\n";
-*/
-
-char pas[] = "pascals.";
-
-unsigned int adc[8];
-
-volatile int unitFlag;
-volatile uint8_t counter;
-volatile uint8_t k;
-
-void mcu_init();
-void uart_init();
-void uart_write(char* str);
-void uart_writen(char* data, int n);
-void uart_writec(char data);
-char* value_percent(float volts);
-
-
 
 int main(void)
 {
     mcu_init();
     uart_init();
-
+   
     P1DIR   |= 0x01;
     P1OUT   &= 0x01;
 
@@ -128,28 +44,19 @@ int main(void)
         
         if(unitFlag == 0)
         {
-            //volts = ((pressure*3.3)/1024);
-            //pascal = ((3*(volts))*750)*133/1000;
-            //output = pressure;   //2110818.182*volts+34300;  
             float range = path(pressure, 0, 1023, 34.3, 7000);
             output = range;    
             unitAll = " kPa"; 
-            
-            //dtostre(output, s, 3, 0);
         }
         else if(unitFlag == 1)
         {
-            //volts = ((pressure*3.3)/1024);
-            long double range = path(pressure, 0 , 1023, 0.343, 70);
+            float range = path(pressure, 0 , 1023, 0.343, 70);
             output = range;
             unitAll = " bar";
         }
         else if (unitFlag == 2)
         {
-            //volts = ((pressure*3.3)/1024);
-            //tor = (3*(volts))*750;
-            //output = tor ;
-            long double range = path(pressure, 0 , 1023, 0.257, 52.504);
+            float range = path(pressure, 0 , 1023, 0.257, 52.504);
             output = range;
             unitAll = " kTorr";
         }
@@ -157,6 +64,7 @@ int main(void)
         {
             uart_write("No unit declared !");
         }
+
 
         char* sum_o = value_percent(output);
 
@@ -183,24 +91,21 @@ int main(void)
 
        if(unitFlag == 0)
         {
-            volts = ((pressure*3.3)/1023);
-            
-            unitAll = " pascal";
-           
+            float range = path(pressure, 0, 1023, 34.3, 7000);
+            output = range;    
+            unitAll = " kPa";
         }
         else if(unitFlag == 1)
         {
-            volts = ((pressure*3.3)/1024)*1000;
-            bar = (3*(volts-0.475));
-            output = bar;
-            unitAll = " mBar";
+            float range = path(pressure, 0 , 1023, 0.343, 70);
+            output = range;
+            unitAll = " bar";
         }
         else if (unitFlag == 2)
         {
-            volts = ((pressure*3.3)/1024)*1000;
-            tor = (3*(volts-0.475))*750;
-            output = tor ;
-            unitAll = " torr";
+            float range = path(pressure, 0 , 1023, 0.257, 52.504);
+            output = range;
+            unitAll = " kTorr";
         }
         else 
         {
@@ -231,24 +136,21 @@ int main(void)
 
         if(unitFlag == 0)
         {
-            volts = ((pressure*3.3)/1023);
-            
-            unitAll = " pascal";
-           
+            float range = path(pressure, 0, 1023, 34.3, 7000);
+            output = range;    
+            unitAll = " kPa";
         }
         else if(unitFlag == 1)
         {
-            volts = ((pressure*3.3)/1024)*1000;
-            bar = (3*(volts-0.475));
-            output = bar;
-            unitAll = " mBar";
+            float range = path(pressure, 0 , 1023, 0.343, 70);
+            output = range;
+            unitAll = " bar";
         }
         else if (unitFlag == 2)
         {
-            volts = ((pressure*3.3)/1024)*1000;
-            tor = (3*(volts-0.475))*750;
-            output = tor ;
-            unitAll = " torr";
+            float range = path(pressure, 0 , 1023, 0.257, 52.504);
+            output = range;
+            unitAll = " kTorr";
         }
         else 
         {
