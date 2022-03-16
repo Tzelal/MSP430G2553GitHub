@@ -33,6 +33,7 @@ int main(void)
         for(int i = 0; i < count; i++)
         {
             int A0 = adc[7];
+            __delay_cycles(25);
             raw += A0;
         }
         res = raw / count;
