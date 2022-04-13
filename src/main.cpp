@@ -45,19 +45,19 @@ int main(void)
         
         if(unitFlag == 0)
         {
-            float range = path(pressure, 0, 1023, 34.3, 7000);
+            float range = path(pressure, 171, 1036, 34.3, 200.);
             output = range;    
             unitAll = " kPa"; 
         }
         else if(unitFlag == 1)
         {
-            float range = path(pressure, 0 , 1023, 0.343, 70);
+            float range = path(pressure, 171 , 1036, 0.343, 2.);
             output = range;
             unitAll = " bar";
         }
         else if (unitFlag == 2)
         {
-            float range = path(pressure, 0 , 1023, 0.257, 52.504);
+            float range = path(pressure, 171 , 1036, 0.257, 1.5);
             output = range;
             unitAll = " kTorr";
         }
@@ -69,7 +69,7 @@ int main(void)
 
         char* sum_o = value_percent(output);
 
-        uart_write(volta0);
+        //uart_write(volta0);
         uart_write(sum_o);
         uart_write(unitAll);
         uart_write("\n");
@@ -92,19 +92,19 @@ int main(void)
 
        if(unitFlag == 0)
         {
-            float range = path(pressure, 0, 1023, 34.3, 7000);
+            float range = path(pressure, 171, 1036, 34.3, 200.);
             output = range;    
             unitAll = " kPa";
         }
         else if(unitFlag == 1)
         {
-            float range = path(pressure, 0 , 1023, 0.343, 70);
+            float range = path(pressure, 171 , 1036, 0.343, 2.);
             output = range;
             unitAll = " bar";
         }
         else if (unitFlag == 2)
         {
-            float range = path(pressure, 0 , 1023, 0.257, 52.504);
+            float range = path(pressure, 171 , 1036, 0.257, 1.5);
             output = range;
             unitAll = " kTorr";
         }
@@ -115,7 +115,7 @@ int main(void)
 
         char* sum_o = value_percent(output);
 
-        uart_write(volta1);
+        //uart_write(volta1);
         uart_write(sum_o);
         uart_write(unitAll);
         uart_write("\n");
@@ -137,19 +137,19 @@ int main(void)
 
         if(unitFlag == 0)
         {
-            float range = path(pressure, 0, 1023, 34.3, 7000);
+            float range = path(pressure, 171, 1036, 34.3, 200.);
             output = range;    
             unitAll = " kPa";
         }
         else if(unitFlag == 1)
         {
-            float range = path(pressure, 0 , 1023, 0.343, 70);
+            float range = path(pressure, 171 , 1036, 0.343, 2.);
             output = range;
             unitAll = " bar";
         }
         else if (unitFlag == 2)
         {
-            float range = path(pressure, 0 , 1023, 0.257, 52.504);
+            float range = path(pressure, 171 , 1036, 0.257, 1.5);
             output = range;
             unitAll = " kTorr";
         }
@@ -160,7 +160,7 @@ int main(void)
 
         char* sum_o = value_percent(output);
 
-        uart_write(volta2);
+        //uart_write(volta2);
         uart_write(sum_o);
         uart_write(unitAll);
         uart_write("\n");
@@ -219,7 +219,7 @@ void mcu_init() {
 
     WDTCTL = WDTPW +WDTHOLD;                  // Stop Watchdog Timer
 
-    if (CALBC1_16MHZ==0xFF)                   // If calibration constant erased
+    if (CALBC1_8MHZ==0xFF)                   // If calibration constant erased
     {
       while(1);                               // do not load, trap CPU!!
     }
@@ -240,8 +240,8 @@ void uart_init() {
     P1SEL2 = BIT1 + BIT2 ;                    // P1.1 = RXD, P1.2=TXD
 
     UCA0CTL1 |= UCSSEL_2;                     // SMCLK
-    UCA0BR0 = 52;                            // 16MHz 9600
-    UCA0BR1 = 0;                              // 16MHz 9600
+    UCA0BR0 = 54;                            // 1MHz 19200
+    UCA0BR1 = 0;                              // 1MHz 19200
     UCA0MCTL = UCBRS_6;                        // Modulation UCBRSx = 6
     UCA0CTL1 &= ~UCSWRST;                     // **Initialize USCI state machine**
     IE2 |= UCA0RXIE;                          // Enable USCI_A0 RX interrupt
