@@ -1,5 +1,3 @@
-//Last configuration on 13.04.2022
-
 #include <msp430.h>
 #include <string.h>
 #include <math.h>
